@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Sunglass_ecom.Models;
 using Sunglass_ecom.Data;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Recommendaton_Modal;
 
 namespace Sunglass_ecom.Controllers
 {
@@ -13,9 +15,12 @@ namespace Sunglass_ecom.Controllers
     public class ProductController : ControllerBase
     {
         private readonly EcommerceDbContext _dbContext;
+        private readonly BagOfWordsModel _modal;
         public ProductController(EcommerceDbContext dbContext)
         {
             _dbContext = dbContext;
+            _modal = new BagOfWordsModel();
+            _modal.load();
         }
         [HttpGet]
         public async Task<ActionResult<List<Product>>> GetProduct()
@@ -28,6 +33,27 @@ namespace Sunglass_ecom.Controllers
         public async Task<ActionResult<List<Product>>> GetProductById(int Id)
         {
             var product = await _dbContext.Product.FindAsync(Id);
+
+            if (product == null)
+            {
+                return NotFound("Id Not Found");
+            }
+
+            var currTokens = _modal.Tokenizer(product.Description, " ");
+            var currVecs = _modal.Vectorizer(currTokens);
+            var products = await _dbContext.Product.ToListAsync();
+            foreach(Product prod in products)
+            {
+                if(prod.Id != product.Id)
+                {
+                    var otherTokens = _modal.Tokenizer(prod.Description, " ");
+                    var otherVecs = _modal.Vectorizer(otherTokens);
+                    prod.recommendationScore = BagOfWordsModel.cosineSimilarity(currVecs, otherVecs);
+                }
+            }
+
+            products = products.OrderByDescending(e => e.recommendationScore).ToList();
+            product.recommendations = products.Where(p=>p.Id!=product.Id).Take(10).ToList();
             if (product == null)
             {
                 return NotFound("Id Not Found");
@@ -35,6 +61,7 @@ namespace Sunglass_ecom.Controllers
             return Ok(product);
         }
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<Product>> CreateProduct([FromBody]Product prod)
         {
             

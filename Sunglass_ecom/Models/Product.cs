@@ -9,6 +9,7 @@ public partial class Product
     public int Id { get; set; }
 
     public required string ProductName { get; set; }
+    public string? Description {  get; set; }
 
     public string? Manufacturer { get; set; }
 
@@ -27,6 +28,10 @@ public partial class Product
 
     public int Stock { get; set; }
     public int? CategoryId { get; set; }
+    [NotMapped]
+    public List<Product>? recommendations { get; set; }
+    [NotMapped]
+    public float recommendationScore {  get; set; }
     public virtual Category? Category { get; set; }
     public virtual ICollection<OrderItems>? OrderItems{get; set;}
 

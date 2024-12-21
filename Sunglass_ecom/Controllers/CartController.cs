@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿/*using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sunglass_ecom.Data;
@@ -40,7 +40,7 @@ namespace Sunglass_ecom.Controllers
         }
 
         [HttpPost("AddToCart")]
-        public async Task<ActionResult<Cart>> AddToCart([FromBody] Cart cartitem)
+        public async Task<ActionResult<Cart>> AddToCart([FromBody] OrderItems orderItem)
         {
 
             if (cartitem== null)
@@ -83,3 +83,4 @@ namespace Sunglass_ecom.Controllers
     } 
 
 
+*/

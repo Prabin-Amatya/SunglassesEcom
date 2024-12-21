@@ -10,41 +10,42 @@ namespace Sunglass_ecom.Controllers
     [ApiController]
     public class OrderItemsController : ControllerBase
     {
-        private readonly EcommerceDbContext _context;
+        private readonly EcommerceDbContext _dbContext;
 
         public OrderItemsController(EcommerceDbContext context)
         {
-            _context = context;
+            _dbContext = context;
         }
         [HttpPost]
-        public async Task<IActionResult> AddOrderItem(OrderItems orderDto)
+        public async Task<IActionResult> AddOrderItem(OrderItems orderItem)
         {
 
-
-            // Validate stock availability for each order item
-            foreach (var item in orderDto.Items)
+            if (orderItem == null)
             {
-                var product = await _context.Product
-                    .FirstOrDefaultAsync(p => p.Id == item.ProductId);
-
-                if (product == null)
-                {
-                    return NotFound($"Product with ID {item.ProductId} not found.");
-                }
-
-                if (product.Stock < item.Quantity)
-                {
-                    return BadRequest($"Not enough stock for product {product.ProductName}. Only {product.Stock} available.");
-                }
+                return BadRequest("orderItemuct data is missing or invalid.");
             }
- 
+            await _dbContext.OrderItems.AddAsync(orderItem);
+            await _dbContext.SaveChangesAsync();
 
 
             return Ok("Item added successfully");
         }
 
+        [HttpPut("{Id}")]
+        public async Task<ActionResult<OrderItems>> UpdateProduct(int Id, OrderItems Name)
+        {
+            if (Id != Name.Id)
+            {
+                return BadRequest();
+            }
+            _dbContext.Entry(Name).State = EntityState.Modified;
+            await _dbContext.SaveChangesAsync();
+            return Ok(Name);
 
 
+
+
+        }
     }
+
 }
-   
