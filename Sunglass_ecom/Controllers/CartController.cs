@@ -1,4 +1,4 @@
-﻿/*using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sunglass_ecom.Data;
@@ -40,30 +40,18 @@ namespace Sunglass_ecom.Controllers
         }
 
         [HttpPost("AddToCart")]
-        public async Task<ActionResult<Cart>> AddToCart([FromBody] OrderItems orderItem)
+        public async Task<ActionResult<Cart>> AddToCart([FromBody] Cart cart)
         {
 
-            if (cartitem== null)
+            if (cart == null)
             {
-                return NotFound("Cart Not Found");
+                return BadRequest("orderItemuct data is missing or invalid.");
             }
-            var existingItem = await _dbContext.Cart
-           .Include(ci => ci.User)
-           .FirstOrDefaultAsync(ci => ci.User == cartitem.User );
-
-            if (existingItem != null)
-            {
-                existingItem.Quantity += cartitem.Quantity;
-                existingItem.TotalPrice = existingItem.Quantity * existingItem.UnitPrice;
-            }
-            else
-            {
-                cartitem.TotalPrice = cartitem.Quantity * cartitem.UnitPrice;
-                 _dbContext.Cart.Add(cartitem);
-            }
-
+            await _dbContext.Cart.AddAsync(cart);
             await _dbContext.SaveChangesAsync();
-            return Ok("Item added to cart.");
+
+
+            return Ok("Item added successfully");
         }
 
         [HttpDelete("RemoveFromCart/{id}")]
@@ -83,4 +71,3 @@ namespace Sunglass_ecom.Controllers
     } 
 
 
-*/
