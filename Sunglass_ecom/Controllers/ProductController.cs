@@ -6,6 +6,7 @@ using Sunglass_ecom.Data;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Recommendaton_Modal;
+using Sunglass_ecom.Utils;
 
 namespace Sunglass_ecom.Controllers
 {
@@ -16,11 +17,12 @@ namespace Sunglass_ecom.Controllers
     {
         private readonly EcommerceDbContext _dbContext;
         private readonly BagOfWordsModel _modal;
-        public ProductController(EcommerceDbContext dbContext)
+        private readonly Vectors _vectors;
+        public ProductController(EcommerceDbContext dbContext, Vectors vectors, BagOfWordsModel modal)
         {
             _dbContext = dbContext;
-            _modal = new BagOfWordsModel();
-            _modal.load();
+            _modal = modal;
+            _vectors = vectors;
         }
         [HttpGet]
         public async Task<ActionResult<List<Product>>> GetProduct()
@@ -33,33 +35,34 @@ namespace Sunglass_ecom.Controllers
         public async Task<ActionResult<List<Product>>> GetProductById(int Id)
         {
             var product = await _dbContext.Product.FindAsync(Id);
+            var similarityScores = new List<SimilarityScores>();
 
             if (product == null)
             {
                 return NotFound("Id Not Found");
             }
 
-            var currTokens = _modal.Tokenizer(product.Description, " ");
-            var currVecs = _modal.Vectorizer(currTokens);
-            var products = await _dbContext.Product.ToListAsync();
-            foreach(Product prod in products)
+            if (product.Description != null)
             {
-                if(prod.Id != product.Id)
+                var currTokens = _modal.Tokenizer(product.Description, " ");
+                var currVecs = _modal.Vectorizer(currTokens);
+                foreach (Vec vector in _vectors.vectors)
                 {
-                    var otherTokens = _modal.Tokenizer(prod.Description, " ");
-                    var otherVecs = _modal.Vectorizer(otherTokens);
-                    prod.recommendationScore = BagOfWordsModel.cosineSimilarity(currVecs, otherVecs);
+                    if (vector.product.Id != product.Id)
+                    {
+                        SimilarityScores similarityScore = new SimilarityScores();
+                        similarityScore.Id = vector.product.Id;
+                        similarityScore.score = BagOfWordsModel.cosineSimilarity(currVecs, vector.vector);
+                        similarityScores.Add(similarityScore);
+                    }
                 }
-            }
 
-            products = products.OrderByDescending(e => e.recommendationScore).ToList();
-            product.recommendations = products.Where(p=>p.Id!=product.Id).Take(10).ToList();
-            if (product == null)
-            {
-                return NotFound("Id Not Found");
+                var products = similarityScores.OrderByDescending(s => s.score).Take(5).ToList();
+                product.recommendations = similarityScores.Select(p => p.Id).ToList();
             }
             return Ok(product);
         }
+
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<Product>> CreateProduct([FromBody]Product prod)

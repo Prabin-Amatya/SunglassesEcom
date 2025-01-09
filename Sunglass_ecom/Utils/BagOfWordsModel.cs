@@ -11,21 +11,25 @@ namespace Recommendaton_Modal
 
         public BagOfWordsModel()
         {
+            this.load();
+            Console.WriteLine("Model loaded");
         }
 
         public  BagOfWordsModel(List<String> corpus, string sep) {
-            this.vocab = new HashSet<string>();
-            this.vectors = new Dictionary<string, int>();
-            foreach (String description in corpus)
-            {
-                foreach(string word in description.Split(sep))
+                this.vocab = new HashSet<string>();
+                this.vectors = new Dictionary<string, int>();
+                foreach (String description in corpus)
                 {
-                    vocab.Add(word.ToLower());
-                    this.vectors[word.ToLower()] = 0;
+                    foreach (string word in description.Split(sep))
+                    {
+                        vocab.Add(word.ToLower());
+                        this.vectors[word.ToLower()] = 0;
+                    }
                 }
-            }
-            length = this.vectors.Count;
+                length = this.vectors.Count;
+                Console.WriteLine("New Created");
         }
+
 
         public List<String> Tokenizer(String word,String sep)
         {

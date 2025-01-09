@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
+using Sunglass_ecom.Utils;
+using Recommendaton_Modal;
+using System;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +29,24 @@ builder.Services.AddDbContext<EcommerceDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("conn")));
 
 builder.Services.AddControllers()
-    .AddJsonOptions(options => { });
+    .AddJsonOptions(options => {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
+builder.Services.AddSingleton(o => new BagOfWordsModel());
+builder.Services.AddSingleton(ServiceProvider =>
+{
+    var model = ServiceProvider.GetRequiredService<BagOfWordsModel>();
+    var scopeFactory = ServiceProvider.GetRequiredService<IServiceScopeFactory>();
+    return new Vectors(model, scopeFactory);
+});
+/*{
+
+    Vectors vectors = new Vectors();
+    var Task =  vectors.initializeAsync(ServiceProvider);
+    Task.Wait();
+    return vectors;
+});*/
 
 builder.Services.AddAuthentication(cfg => {
     cfg.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,6 +67,7 @@ builder.Services.AddAuthentication(cfg => {
         ClockSkew = TimeSpan.Zero
     };
 });
+
 
 builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(c => {
@@ -76,7 +99,6 @@ builder.Services.AddSwaggerGen(c => {
 });
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
