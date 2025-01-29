@@ -41,6 +41,7 @@ namespace Sunglass_ecom.Controllers
             {
                 try
                 {
+                    registration.Role = "User";
                     var hashedPassword = BC.HashPassword(registration.Password, workFactor: 10);
                     registration.Password = hashedPassword; 
                     Cart cart = new Cart();
@@ -97,7 +98,9 @@ namespace Sunglass_ecom.Controllers
                         var response = new
                         {
                             userName = user.Username,
-                            token = token
+                            token = token,
+                            role = user.Role,
+                            cartId = user.cartId
                         };
                         return Ok(response);
                     }

@@ -29,7 +29,7 @@ public partial class Product
     public int Stock { get; set; }
     public int? CategoryId { get; set; }
     [NotMapped]
-    public List<int>? recommendations { get; set; }
+    public List<Product>? recommendations { get; set; }
     [NotMapped]
     public float recommendationScore {  get; set; }
     public virtual Category? Category { get; set; }

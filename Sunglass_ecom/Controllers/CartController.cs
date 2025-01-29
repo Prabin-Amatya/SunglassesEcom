@@ -28,6 +28,7 @@ namespace Sunglass_ecom.Controllers
             }
             return Ok(data);
         }
+
         [HttpGet("{UserId}")]
         public async Task<ActionResult<List<Cart>>> GetUserId(int UserId)
         {
@@ -39,13 +40,13 @@ namespace Sunglass_ecom.Controllers
             return Ok(Userid);
         }
 
-        [HttpPost("AddToCart")]
+        [HttpPost]
         public async Task<ActionResult<Cart>> AddToCart([FromBody] Cart cart)
         {
 
             if (cart == null)
             {
-                return BadRequest("orderItemuct data is missing or invalid.");
+                return BadRequest("orderItem data is missing or invalid.");
             }
             await _dbContext.Cart.AddAsync(cart);
             await _dbContext.SaveChangesAsync();
@@ -54,14 +55,16 @@ namespace Sunglass_ecom.Controllers
             return Ok("Item added successfully");
         }
 
-        [HttpDelete("RemoveFromCart/{id}")]
-        public async Task<IActionResult> RemoveFromCart(int id)
+        [HttpPut("{cart}")]
+        public async Task<IActionResult> UpdateCart(Cart cart)
         {
-            var item = await _dbContext.Cart.FindAsync(id);
-            if (item == null)
-                return NotFound("Item not found");
-
-            _dbContext.Cart.Remove(item);
+            Cart old_cart = await _dbContext.Cart.FirstOrDefaultAsync(p => p.Id == cart.Id);
+            old_cart.IsActive = cart.IsActive;
+            old_cart.TotalPrice = cart.TotalPrice;
+            old_cart.Quantity = cart.Quantity;
+            old_cart.UnitPrice = cart.UnitPrice;
+            old_cart.OrderItems = cart.OrderItems;
+            _dbContext.Update(old_cart);
             await _dbContext.SaveChangesAsync();
             return Ok("Item removed");
         }

@@ -6,16 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Writers;
-using Sunglass_ecom.Utils;
-using Recommendaton_Modal;
-using System;
-using System.Text.Json.Serialization;
-using Sunglass_ecom.Interfaces;
 using Sunglass_ecom.Repositoriess;
-using BC = BCrypt.Net.BCrypt;
-using Sunglass_ecom.Services;
-
+using Sunglass_ecom.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,26 +25,10 @@ var config = provider.GetService<IConfiguration>();
 builder.Services.AddDbContext<EcommerceDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("conn")));
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options => {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    });
-builder.Services.AddTransient<IServiceRepository, ServiceRepository>();
-builder.Services.AddScoped<KhaltiService>();
-builder.Services.AddSingleton(o => new BagOfWordsModel());
-builder.Services.AddSingleton(ServiceProvider =>
-{
-    var model = ServiceProvider.GetRequiredService<BagOfWordsModel>();
-    var scopeFactory = ServiceProvider.GetRequiredService<IServiceScopeFactory>();
-    return new Vectors(model, scopeFactory);
-});
-/*{
+builder.Services.AddScoped<IServiceRepository,ServiceRepository>(); 
 
-    Vectors vectors = new Vectors();
-    var Task =  vectors.initializeAsync(ServiceProvider);
-    Task.Wait();
-    return vectors;
-});*/
+builder.Services.AddControllers()
+    .AddJsonOptions(options => { });
 
 builder.Services.AddAuthentication(cfg => {
     cfg.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -73,7 +49,6 @@ builder.Services.AddAuthentication(cfg => {
         ClockSkew = TimeSpan.Zero
     };
 });
-
 
 builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(c => {
@@ -104,57 +79,19 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .WithHeaders("Authorization", "Content-Type");
-                      });
-});
-
-
 var app = builder.Build();
 
-app.UseStaticFiles();
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var _dbcontext = services.GetRequiredService<EcommerceDbContext>();
-    var admin = _dbcontext.Users.FirstOrDefault(p=>p.Email == "admin@gmail.com");
-    if (admin == null)
-    {
-        User user = new User();
-        user.Username = "admin@gmail.com";
-        user.Role = "Admin";
-        user.Email = "admin@gmail.com";
-        user.Password = BC.HashPassword("admin@123", workFactor: 10); ;
-        user.FirstName = "admin";
-        user.LastName = "admin";
-        user.City = "Address";
-        user.Streets = "Street";
-        user.Zones = "Zone";
-        user.PhoneNumber = "99797979";
-        _dbcontext.Users.Add(user);
-        _dbcontext.SaveChanges();
-    }
-}
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseRouting();
-app.UseCors(MyAllowSpecificOrigins);
-if (app.Environment.IsProduction())
-{
-    app.UseHttpsRedirection();
-};
+
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseEndpoints(endpoints =>

@@ -9,6 +9,7 @@ namespace Sunglass_ecom.Models
         public int ProductId { get; set; }
         [Required]
         public string ProductName { get; set; }
+        public string CategoryName { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal? Discount { get; set; }
         public int Quantity { get; set; }
