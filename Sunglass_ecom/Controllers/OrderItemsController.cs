@@ -100,8 +100,23 @@ namespace Sunglass_ecom.Controllers
 
             return Ok(oi);
 
+            // Update all properties
+            existingItem.CartId = updatedItem.CartId;
+            existingItem.ProductId = updatedItem.ProductId;
+            existingItem.ProductName = updatedItem.ProductName;
+            existingItem.CategoryName = updatedItem.CategoryName;
+            existingItem.UnitPrice = updatedItem.UnitPrice;
+            existingItem.Discount = updatedItem.Discount;
+            existingItem.Quantity = updatedItem.Quantity;
+            existingItem.TotalPrice = updatedItem.TotalPrice;
+            existingItem.SubTotal = updatedItem.SubTotal;
+            existingItem.status = updatedItem.status;
+            existingItem.isActive = updatedItem.isActive;
 
+            await _dbContext.SaveChangesAsync();
+            return Ok(existingItem);
         }
+
     }
 
 }
