@@ -18,14 +18,12 @@ namespace Sunglass_ecom.Models
         [Required(ErrorMessage = "FirstName Field Is Empty")]
         public  string FirstName { get; set; }
         public  string LastName { get; set; }
-        public  string Address { get; set; }
         public  string City { get; set; }
         public  string Zones { get; set; }
         public  string Streets { get; set; }
         [Phone]
         public  string PhoneNumber { get; set; }
-        [Required]
-        public string Role {  get; set; }
+        public string? Role {  get; set; }
         public DateTime DateOfBirth { get; set; }
         public int? cartId{get; set; }
         public bool IsActive { get; set; }

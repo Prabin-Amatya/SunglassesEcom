@@ -36,11 +36,30 @@ namespace Sunglass_ecom.Controllers
             return Ok(Category);
         }
         [HttpPost]
-        [Authorize]
-        public async Task<ActionResult<Category>> CreateCategory([FromBody]Category prod)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<Category>> CreateCategory([FromForm]Category prod)
         {
-            
-                if (prod == null)
+            if (prod.CategoryImage != null)
+            {
+                string fileDirectory = $"wwwroot/CategoryImage";
+
+                if (!Directory.Exists(fileDirectory))
+                {
+                    Directory.CreateDirectory(fileDirectory);
+                }
+                string uniqueFileName = Guid.NewGuid() + "_" + prod.CategoryImage.FileName;
+                string filePath = Path.Combine(Path.GetFullPath($"wwwroot/CategoryImage"), uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await prod.CategoryImage.CopyToAsync(fileStream);
+                    prod.Imageurl = $"CategoryImage/" + uniqueFileName;
+
+                }
+
+            }
+
+            if (prod == null)
                 {
                     return BadRequest("Category data is missing or invalid.");
                 }
@@ -50,19 +69,58 @@ namespace Sunglass_ecom.Controllers
 
         }
         [HttpPut("{Id}")]
-        public async Task<ActionResult<Category>> UpdateCategory(int Id,Category Name)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<Category>> UpdateCategory(int Id, [FromForm] Category updatedCategory)
         {
-            if (Id != Name.Id)
+            // Check if the incoming category ID matches the one in the URL
+            if (Id != updatedCategory.Id)
             {
-                return BadRequest();
+                return BadRequest("Category ID mismatch.");
             }
-            _dbContext.Entry(Name).State = EntityState.Modified;
+
+            // Find the existing category in the database
+            var existingCategory = await _dbContext.Category.FindAsync(Id);
+            if (existingCategory == null)
+            {
+                return NotFound("Category not found.");
+            }
+
+            // Update the fields with the values from the incoming category
+            existingCategory.Name = updatedCategory.Name;
+            existingCategory.CategoryDescription = updatedCategory.CategoryDescription;
+            existingCategory.IsActive = updatedCategory.IsActive;
+
+            // Handle image upload if a new image is provided
+            if (updatedCategory.CategoryImage != null)
+            {
+                string fileDirectory = Path.Combine("wwwroot", "CategoryImage");
+
+                // Create directory if it doesn't exist
+                if (!Directory.Exists(fileDirectory))
+                {
+                    Directory.CreateDirectory(fileDirectory);
+                }
+
+                string uniqueFileName = Guid.NewGuid() + "_" + updatedCategory.CategoryImage.FileName;
+                string filePath = Path.Combine(fileDirectory, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await updatedCategory.CategoryImage.CopyToAsync(fileStream);
+                    existingCategory.Imageurl = $"CategoryImage/{uniqueFileName}"; // Update the image URL
+                }
+            }
+
+            // Save the changes to the database
+            _dbContext.Entry(existingCategory).State = EntityState.Modified;
             await _dbContext.SaveChangesAsync();
-            return Ok(Name);
-            
+
+            return Ok(existingCategory); // Return the updated category
         }
 
+
         [HttpDelete("{Id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Category>> DeleteCategory(int Id)
         {
             var prod = await _dbContext.Category.FindAsync(Id);

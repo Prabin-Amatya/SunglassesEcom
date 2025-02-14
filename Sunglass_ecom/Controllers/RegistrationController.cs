@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.Eventing.Reader;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Sunglass_ecom.Controllers
 {
@@ -41,6 +42,7 @@ namespace Sunglass_ecom.Controllers
             {
                 try
                 {
+                    registration.Role = "User";
                     var hashedPassword = BC.HashPassword(registration.Password, workFactor: 10);
                     registration.Password = hashedPassword; 
                     Cart cart = new Cart();
@@ -97,7 +99,9 @@ namespace Sunglass_ecom.Controllers
                         var response = new
                         {
                             userName = user.Username,
-                            token = token
+                            token = token,
+                            role = user.Role,
+                            cartId = user.cartId
                         };
                         return Ok(response);
                     }
@@ -111,6 +115,52 @@ namespace Sunglass_ecom.Controllers
             {
                 return BadRequest(e.Message);
             }
+        }
+
+        [HttpGet("{userName}")]
+        public async Task<ActionResult<User>> GetUserByUserName(String userName)
+        {
+            var user = await _dbContext.Users.Where(p=>p.Username == userName).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                return NotFound("Id Not Found");
+            }
+            return Ok(user);
+        }
+
+        [HttpPut("{userName}")]
+        public async Task<ActionResult<User>> UpdateUser(String userName, User updatedUser)
+        {
+
+            var existingUser = await _dbContext.Users.Where(p=>p.Username == userName).FirstOrDefaultAsync();
+            if (existingUser == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            if (existingUser.Password != updatedUser.Password)
+            {
+                var hashedPassword = BC.HashPassword(updatedUser.Password, workFactor: 10);
+                existingUser.Password = hashedPassword;
+            }
+
+            // Update fields with the values from the incoming user
+            existingUser.Username = updatedUser.Username;
+            existingUser.Email = updatedUser.Email;
+            existingUser.FirstName = updatedUser.FirstName;
+            existingUser.LastName = updatedUser.LastName;
+            existingUser.City = updatedUser.City;
+            existingUser.Streets = updatedUser.Streets;
+            existingUser.Zones = updatedUser.Zones;
+            existingUser.PhoneNumber = updatedUser.PhoneNumber;
+            existingUser.DateOfBirth = updatedUser.DateOfBirth;
+            existingUser.IsActive = updatedUser.IsActive;
+
+            // Save the changes to the database
+            _dbContext.Entry(existingUser).State = EntityState.Modified;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(existingUser); // Return the updated user
         }
 
 
